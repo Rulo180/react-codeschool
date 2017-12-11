@@ -1,6 +1,8 @@
-import React, { Component } from 'react';
+import React from 'react';
 import Comment from './Comment';
 import CommentForm from './CommentForm';
+import jQuery from 'jquery';
+
 
 class CommentBox extends React.Component {
     constructor(props) {
@@ -8,10 +10,11 @@ class CommentBox extends React.Component {
 
         this.state = {
             showComments : false,
-            comments : [
-                { id: 1, author: "Morgan McCircuit", body: "Great picture!" },
-                { id: 2, author: "Bending Bender", body: "Excellent stuff" }
-            ]
+            comments : []
+            // comments : [
+            //     { id: 1, author: "Morgan McCircuit", body: "Great picture!" },
+            //     { id: 2, author: "Bending Bender", body: "Excellent stuff" }
+            // ]
         };
     }
 
@@ -39,11 +42,26 @@ class CommentBox extends React.Component {
         );
     }
 
+    componentWillMount() {
+        console.log("Entro a willMount()");
+        this._fetchComments();
+    }
+
+    componentDidMount() {
+        this._timer = setInterval(
+            () => this._fetchComments(), 
+            120000);
+    }
+
+    componentWillUnmount() {
+        clearInterval(this._timer);
+    }
+
     _getComments() {
         let commentList = this.state.comments;
 
         return commentList.map( (comment) => {
-            return (<Comment author={comment.author} body={comment.body} key={comment.id}/>);
+            return (<Comment key={comment.url} comment={comment} onDelete={this._deleteComments.bind(this)}/>);
         });
     }
 
@@ -70,6 +88,25 @@ class CommentBox extends React.Component {
         }
         console.log(comment);
         this.setState({comments: this.state.comments.concat([comment])});
+    }
+
+    _fetchComments() {
+        jQuery.ajax({
+            method: 'GET',
+            url: 'https://swapi.co/api/people/',    //API que devuelve informacion sobre Star Wars, particularmente ahora le estoy pidiendo personajes
+            success: (people) => {
+                console.log("people: " + people.count);     //Logeo la cuenta de personajes
+                this.setState({ comments: people.results });  //Asigno al arreglo de comments el arreglo llamado results que contiene los docs con la info de los personajes
+            }
+        });
+    }
+
+    _deleteComments(comment) {
+        const comments = [...this.state.comments];  //con el operador spread clonamos el arreglo de comments existente
+        const commentIndex = comments.indexOf(comment);
+        comments.splice(commentIndex, 1);   //Corto del clon de comments, el comentario a borrar
+
+        this.setState({ comments });    //Piso el arreglo de comments con la nueva version
     }
 
 }
